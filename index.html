@@ -204,12 +204,12 @@
 
 <div class="config-note" id="configNote">
   <strong>setup required</strong><br>
-  Replace <strong>pk_94257726_91IMQIOH9E8LJ80C84E5DLNEO46QD8ZW</strong> at the top of this file with your ClickUp API token.<br>
+  Replace <strong>YOUR_API_TOKEN</strong> at the top of this file with your ClickUp API token.<br>
   Generate one at: app.clickup.com &rarr; Settings &rarr; Apps &rarr; API Token
 </div>
 
 <script>
-const API_TOKEN = 'pk_94257726_91IMQIOH9E8LJ80C84E5DLNEO46QD8ZW';
+const API_TOKEN = 'YOUR_API_TOKEN';
 const LIST_ID   = '901414675578';
 const FUTURE_WEEKS = 4;
 
@@ -304,9 +304,6 @@ async function fetchAndRender() {
       ...futureLabels
     ];
 
-    const totalPoints = allLabels.length;
-    const scoredCount = meetings.length;
-
     const participantDatasets = PARTICIPANTS.map(p => {
       const scores = meetings.map(t => {
         const field = (t.custom_fields || []).find(f => f.id === p.fieldId);
@@ -321,6 +318,9 @@ async function fetchAndRender() {
       return avg(vals);
     });
 
+    const meetingsWithScores = avgScores.filter(v => v !== null).length;
+    const totalMeetings = meetings.length;
+
     const latestAvgVal = avgScores.filter(v => v !== null).slice(-1)[0];
     const prevAvgVal   = avgScores.filter(v => v !== null).slice(-2, -1)[0];
 
@@ -328,7 +328,7 @@ async function fetchAndRender() {
       latestAvgVal !== null && latestAvgVal !== undefined ? latestAvgVal + '/10' : '—';
 
     document.getElementById('metCount').textContent =
-      `${avgScores.filter(v => v !== null).length} of ${scoredCount}`;
+      meetingsWithScores > 0 ? `${meetingsWithScores} of ${totalMeetings}` : '—';
 
     const trendEl = document.getElementById('metTrend');
     if (latestAvgVal !== null && prevAvgVal !== null) {
@@ -342,6 +342,7 @@ async function fetchAndRender() {
       trendEl.style.color = 'rgba(244,241,234,0.45)';
     }
 
+    const scoredCount = meetingsWithScores;
     const nextIdx = avgScores.findIndex(v => v === null);
     document.getElementById('metNext').textContent =
       nextIdx !== -1 ? allLabels[nextIdx] : (futureLabels[0] || '—');
