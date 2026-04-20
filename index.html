@@ -319,7 +319,7 @@ async function fetchAndRender() {
     });
 
     const meetingsWithScores = avgScores.filter(v => v !== null).length;
-    const totalMeetings = meetings.length;
+    const totalMeetings = meetingsWithScores;
 
     const latestAvgVal = avgScores.filter(v => v !== null).slice(-1)[0];
     const prevAvgVal   = avgScores.filter(v => v !== null).slice(-2, -1)[0];
@@ -328,7 +328,7 @@ async function fetchAndRender() {
       latestAvgVal !== null && latestAvgVal !== undefined ? latestAvgVal + '/10' : '—';
 
     document.getElementById('metCount').textContent =
-      meetingsWithScores > 0 ? `${meetingsWithScores} of ${totalMeetings}` : '—';
+      meetingsWithScores > 0 ? `${meetingsWithScores}` : '—';
 
     const trendEl = document.getElementById('metTrend');
     if (latestAvgVal !== null && prevAvgVal !== null) {
