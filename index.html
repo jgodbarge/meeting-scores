@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOS Meeting Scores — Edovate Leadership Team</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #0f1f38;
+    --navy2:  #162947;
+    --gold:   #c9a84c;
+    --gold2:  #e8c96a;
+    --off:    #f4f1ea;
+    --muted:  rgba(244,241,234,0.45);
+    --border: rgba(201,168,76,0.25);
+    --jeff:   #5b9bd5;
+    --julien: #8b7fd4;
+    --jen:    #d4795a;
+    --dennis: #c9a84c;
+    --jess:   #7fb89e;
+    --avg:    #ffffff;
+  }
+
+  body {
+    background: var(--navy);
+    color: var(--off);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding: 2rem 2rem 3rem;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .header-left h1 {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .header-left p {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .header-right {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  #status {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .status-ok   { color: var(--jess); }
+  .status-err  { color: #e07070; }
+  .status-load { color: var(--gold); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .metric {
+    background: var(--navy2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--off);
+  }
+
+  .metric-value.gold { color: var(--gold2); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .legend-line {
+    width: 22px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 300px;
+  }
+
+  .future-label {
+    position: absolute;
+    top: 8px;
+    right: 0;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .config-note {
+    margin-top: 2rem;
+    padding: 14px 16px;
+    background: rgba(201,168,76,0.07);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.8;
+    display: none;
+  }
+
+  .config-note.visible { display: block; }
+  .config-note strong { color: var(--gold); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>EOS Meeting Scores</h1>
+    <p>Edovate Leadership Team &mdash; weekly satisfaction ratings</p>
+  </div>
+  <div class="header-right">
+    <div id="status" class="status-load">loading...</div>
+    <div style="margin-top:4px;" id="lastUpdated"></div>
+  </div>
+</header>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">latest avg</div>
+    <div class="metric-value gold" id="metLatest">—</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">meetings scored</div>
+    <div class="metric-value" id="metCount">—</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">trend</div>
+    <div class="metric-value" id="metTrend">—</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">next meeting</div>
+    <div class="metric-value" id="metNext">—</div>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="chart-wrap">
+  <div class="future-label">— future meetings</div>
+  <canvas id="chart" role="img" aria-label="EOS meeting score trends over time"></canvas>
+</div>
+
+<div class="config-note" id="configNote">
+  <strong>setup required</strong><br>
+  Replace <strong>YOUR_API_TOKEN</strong> at the top of this file with your ClickUp API token.<br>
+  Generate one at: app.clickup.com &rarr; Settings &rarr; Apps &rarr; API Token
+</div>
+
+<script>
+const API_TOKEN = 'YOUR_API_TOKEN';
+const LIST_ID   = '901414675578';
+const FUTURE_WEEKS = 4;
+
+const PARTICIPANTS = [
+  { key: 'jeff',      label: 'Jeff',      fieldId: '31184095-b70c-4a37-aaa4-af633bf2259e', color: '#5b9bd5', dash: [] },
+  { key: 'julien',    label: 'Julien',    fieldId: '8ef781e4-e188-4495-8bf0-c8e5efc77891', color: '#8b7fd4', dash: [4,3] },
+  { key: 'jen',       label: 'Jen',       fieldId: 'd6b6da52-1cd5-4209-b23a-2107ec0d42b5', color: '#d4795a', dash: [2,3] },
+  { key: 'dennis',    label: 'Dennis',    fieldId: 'd8c6ac4e-14b5-424f-bbe3-cc5927e4d7fe', color: '#c9a84c', dash: [6,3] },
+  { key: 'jess',      label: 'Jess',      fieldId: 'df86180d-47ff-41cf-a69d-7da453ee9d70', color: '#7fb89e', dash: [2,2,6,2] },
+  { key: 'jessica_p', label: 'Jessica P', fieldId: '921b5011-fed2-4661-9002-686abe13dcb9', color: '#c97aad', dash: [8,3] },
+  { key: 'chris',     label: 'Chris',     fieldId: '3361d700-7cbe-462f-b247-c362e3e31b66', color: '#8ea8c3', dash: [3,3,3,3] },
+];
+
+const AVG_COLOR = 'rgba(255,255,255,0.85)';
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = cls || '';
+}
+
+function formatDate(ts) {
+  const d = new Date(parseInt(ts));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+function addWeeks(ts, n) {
+  return parseInt(ts) + n * 7 * 24 * 60 * 60 * 1000;
+}
+
+function parseScore(val) {
+  if (!val || val.trim() === '' || val.trim().toUpperCase() === 'N/A') return null;
+  const n = parseFloat(val);
+  return isNaN(n) ? null : n;
+}
+
+function avg(arr) {
+  const valid = arr.filter(v => v !== null);
+  if (!valid.length) return null;
+  return Math.round((valid.reduce((a,b) => a+b, 0) / valid.length) * 10) / 10;
+}
+
+let chartInstance = null;
+
+async function fetchAndRender() {
+  if (API_TOKEN === 'YOUR_API_TOKEN') {
+    setStatus('api token not set', 'status-err');
+    document.getElementById('configNote').classList.add('visible');
+    return;
+  }
+
+  setStatus('fetching data...', 'status-load');
+
+  try {
+    const params = new URLSearchParams({
+      include_closed: 'true',
+      order_by: 'due_date',
+      subtasks: 'false',
+      page: '0'
+    });
+
+    const res = await fetch(
+      `https://api.clickup.com/api/v2/list/${LIST_ID}/task?${params}`,
+      { headers: { Authorization: API_TOKEN, 'Content-Type': 'application/json' } }
+    );
+
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+
+    const SCORING_START = new Date('2026-04-07').getTime();
+
+    const meetings = data.tasks
+      .filter(t => t.due_date && parseInt(t.due_date) >= SCORING_START)
+      .sort((a, b) => parseInt(a.due_date) - parseInt(b.due_date));
+
+    if (!meetings.length) {
+      setStatus('no scored meetings found', 'status-err');
+      return;
+    }
+
+    const lastDueDate = parseInt(meetings[meetings.length - 1].due_date);
+    const futureLabels = [];
+    const futureDates  = [];
+    for (let i = 1; i <= FUTURE_WEEKS; i++) {
+      const ts = addWeeks(lastDueDate, i);
+      futureLabels.push(formatDate(ts));
+      futureDates.push(ts);
+    }
+
+    const allLabels = [
+      ...meetings.map(t => formatDate(t.due_date)),
+      ...futureLabels
+    ];
+
+    const totalPoints = allLabels.length;
+    const scoredCount = meetings.length;
+
+    const participantDatasets = PARTICIPANTS.map(p => {
+      const scores = meetings.map(t => {
+        const field = (t.custom_fields || []).find(f => f.id === p.fieldId);
+        return field ? parseScore(field.value) : null;
+      });
+      const futureNulls = new Array(FUTURE_WEEKS).fill(null);
+      return { ...p, data: [...scores, ...futureNulls] };
+    });
+
+    const avgScores = meetings.map((_, i) => {
+      const vals = participantDatasets.map(p => p.data[i]).filter(v => v !== null);
+      return avg(vals);
+    });
+
+    const latestAvgVal = avgScores.filter(v => v !== null).slice(-1)[0];
+    const prevAvgVal   = avgScores.filter(v => v !== null).slice(-2, -1)[0];
+
+    document.getElementById('metLatest').textContent =
+      latestAvgVal !== null && latestAvgVal !== undefined ? latestAvgVal + '/10' : '—';
+
+    document.getElementById('metCount').textContent =
+      `${avgScores.filter(v => v !== null).length} of ${scoredCount}`;
+
+    const trendEl = document.getElementById('metTrend');
+    if (latestAvgVal !== null && prevAvgVal !== null) {
+      const diff = Math.round((latestAvgVal - prevAvgVal) * 10) / 10;
+      trendEl.textContent = (diff >= 0 ? '+' : '') + diff;
+      trendEl.style.color = diff > 0 ? '#7fb89e' : diff < 0 ? '#e07070' : 'inherit';
+    } else {
+      trendEl.textContent = 'n/a';
+      trendEl.style.fontSize = '16px';
+      trendEl.style.paddingTop = '4px';
+      trendEl.style.color = 'rgba(244,241,234,0.45)';
+    }
+
+    const nextIdx = avgScores.findIndex(v => v === null);
+    document.getElementById('metNext').textContent =
+      nextIdx !== -1 ? allLabels[nextIdx] : (futureLabels[0] || '—');
+
+    document.getElementById('lastUpdated').textContent =
+      'as of ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const avgDataFull = [
+      ...avgScores,
+      ...new Array(FUTURE_WEEKS).fill(null)
+    ];
+
+    const datasets = [
+      ...participantDatasets.map(p => ({
+        label: p.label,
+        data: p.data,
+        borderColor: p.color,
+        backgroundColor: p.color + '18',
+        borderDash: p.dash,
+        borderWidth: 1.8,
+        pointRadius: p.data.map(v => v !== null ? 4 : 0),
+        pointBackgroundColor: p.color,
+        spanGaps: false,
+        tension: 0.35,
+        fill: false
+      })),
+      {
+        label: 'Team avg',
+        data: avgDataFull,
+        borderColor: AVG_COLOR,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderDash: [],
+        borderWidth: 2.5,
+        pointRadius: avgDataFull.map(v => v !== null ? 6 : 0),
+        pointBackgroundColor: AVG_COLOR,
+        pointStyle: 'rectRot',
+        spanGaps: false,
+        tension: 0.35,
+        fill: false
+      }
+    ];
+
+    const legendEl = document.getElementById('legend');
+    legendEl.innerHTML = '';
+    [...PARTICIPANTS, { label: 'Team avg', color: AVG_COLOR, dash: [] }].forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `<div class="legend-line" style="background:${p.color};"></div>${p.label}`;
+      legendEl.appendChild(item);
+    });
+
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(document.getElementById('chart'), {
+      type: 'line',
+      data: { labels: allLabels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600, easing: 'easeInOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f1f38',
+            borderColor: 'rgba(201,168,76,0.4)',
+            borderWidth: 0.5,
+            titleColor: '#c9a84c',
+            bodyColor: 'rgba(244,241,234,0.8)',
+            padding: 10,
+            callbacks: {
+              label: ctx => ctx.parsed.y !== null
+                ? `  ${ctx.dataset.label}: ${ctx.parsed.y}/10`
+                : null
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 10,
+            ticks: {
+              stepSize: 2,
+              color: 'rgba(244,241,234,0.4)',
+              font: { family: 'DM Mono', size: 11 }
+            },
+            grid: { color: 'rgba(244,241,234,0.06)' },
+            border: { color: 'rgba(201,168,76,0.2)' }
+          },
+          x: {
+            ticks: {
+              autoSkip: false,
+              color: (ctx) => ctx.index < scoredCount
+                ? 'rgba(244,241,234,0.75)'
+                : 'rgba(244,241,234,0.25)',
+              font: (ctx) => ({
+                family: 'DM Mono',
+                size: 11,
+                weight: ctx.index < scoredCount ? '500' : '400'
+              })
+            },
+            grid: {
+              color: (ctx) => ctx.index < scoredCount
+                ? 'rgba(244,241,234,0.08)'
+                : 'rgba(244,241,234,0.03)'
+            },
+            border: { color: 'rgba(201,168,76,0.2)' }
+          }
+        }
+      }
+    });
+
+    setStatus('live data', 'status-ok');
+
+  } catch (err) {
+    setStatus('error: ' + err.message, 'status-err');
+    console.error(err);
+  }
+}
+
+fetchAndRender();
+</script>
+</body>
+</html>
